@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcrypt";
 import { Product,User } from "./models";
 import { connectToDB } from "./utils";
+import { signIn } from "../auth";
 
 export const addUser = async (formData) =>{
     const {username,email,password,phone,address,isAdmin,isActive} = Object.fromEntries(formData);
@@ -43,7 +44,11 @@ export const updateUser = async (formData) =>{
             username,email,password,phone,address,isAdmin,isActive
         }
 //2:51:55
-        Object.keys(updateFields)
+        Object.keys(updateFields).forEach((key)=>
+        (updateFields[key]==="" || undefined) && delete updateFields[key]
+        );
+
+        await User.findByIdAndUpdate(id,updateFields)
     }catch(err){
         console.log(err);
         // throw new Error("Fail to create user!")
@@ -54,6 +59,46 @@ export const updateUser = async (formData) =>{
     redirect("/dashboard/users")
     
 };
+
+
+
+export const updateProduct = async (formData) =>{
+    const { 
+        id,      
+        title,
+        desc,
+        price,
+        stock,
+        color,
+        size,} = Object.fromEntries(formData);
+    try{
+        connectToDB();
+
+        const updateFields = {
+            title,
+            desc,
+            price,
+            stock,
+            color,
+            size,
+        }
+//2:51:55
+        Object.keys(updateFields).forEach((key)=>
+        (updateFields[key]==="" || undefined) && delete updateFields[key]
+        );
+
+        await Product.findByIdAndUpdate(id,updateFields)
+    }catch(err){
+        console.log(err);
+        // throw new Error("Fail to create user!")
+    }
+
+    //refresh page
+    revalidatePath("/dashboard/products")
+    redirect("/dashboard/products")
+    
+};
+
 
 
 export const addProduct = async (formData) =>{
@@ -113,3 +158,14 @@ export const deleteUser = async (formData) =>{
     revalidatePath("/dashboard/users")
     
 };
+
+
+export const authenticate = async (prevState,formData) => {
+    const { username, password } = Object.fromEntries(formData);
+
+    try {
+        await signIn("credentials",{username,password})
+    } catch (err) {
+       return "Wrong Credentials!"
+    }
+} 
